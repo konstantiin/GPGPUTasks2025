@@ -27,6 +27,25 @@ void reportError(cl_int err, const std::string &filename, int line)
 }
 
 #define OCL_SAFE_CALL(expr) reportError(expr, __FILE__, __LINE__)
+template <typename T>
+void dumpDeviceInfo(cl_device_id device, cl_device_info infoTag, std::string description)
+{
+	T result;
+	clGetDeviceInfo(device, infoTag, sizeof(T), &result, nullptr);
+	std::cout <<"\t" << description << ": " << to_string(result) << std::endl;	
+}
+
+void dumpDeviceInfo(cl_device_id device, cl_device_info infoTag, std::string description)
+{
+	size_t sz = 0;
+	OCL_SAFE_CALL(clGetDeviceInfo(device, infoTag, 0, nullptr, &sz));
+	std::vector<unsigned char> result(sz, 0);
+	clGetDeviceInfo(device, infoTag, sz, result.data(), nullptr);
+	std::cout <<"\t" << description << ": " << result.data() << std::endl;	
+}
+
+
+
 
 int main()
 {
@@ -70,24 +89,46 @@ int main()
 		// TODO 1.2
 		// Аналогично тому, как был запрошен список идентификаторов всех платформ - так и с названием платформы, теперь, когда известна длина названия - его можно запросить:
 		std::vector<unsigned char> platformName(platformNameSize, 0);
-		// clGetPlatformInfo(...);
+		clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformName.data(), nullptr);
 		std::cout << "    Platform name: " << platformName.data() << std::endl;
 
 		// TODO 1.3
 		// Запросите и напечатайте так же в консоль вендора данной платформы
+		std::vector<unsigned char> platformVendor(platformNameSize, 0);
+		clGetPlatformInfo(platform, CL_PLATFORM_VENDOR, platformNameSize, platformVendor.data(), nullptr);
+		std::cout << "    Platform name: " << platformVendor.data() << std::endl;
 
 		// TODO 2.1
 		// Запросите число доступных устройств данной платформы (аналогично тому, как это было сделано для запроса числа доступных платформ - см. секцию "OpenCL Runtime" -> "Query Devices")
 		cl_uint devicesCount = 0;
 
+		OCL_SAFE_CALL(clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, nullptr, &devicesCount));
+		std::cout << "Number of OpenCL platforms: " << devicesCount << std::endl;
+		std::vector<cl_device_id> deviceIds(devicesCount);
+		OCL_SAFE_CALL(clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, devicesCount, deviceIds.data(), nullptr));
+
 		for(int deviceIndex = 0; deviceIndex < devicesCount; ++deviceIndex)
 		{
+			std::cout << "Device #" << (deviceIndex + 1) << "/" << devicesCount << std::endl;
+			cl_device_id device = deviceIds[deviceIndex];
+
 			// TODO 2.2
 			// Запросите и напечатайте в консоль:
 			// - Название устройства
 			// - Тип устройства (видеокарта/процессор/что-то странное)
 			// - Размер памяти устройства в мегабайтах
 			// - Еще пару или более свойств устройства, которые вам покажутся наиболее интересными
+			dumpDeviceInfo(device, CL_DEVICE_NAME, "Name");
+			dumpDeviceInfo<cl_ulong>(device, CL_DEVICE_GLOBAL_MEM_SIZE, "Memory");
+			dumpDeviceInfo<cl_device_type>(device, CL_DEVICE_TYPE, "Type");
+			dumpDeviceInfo(device, CL_DEVICE_EXTENSIONS, "Extensions");
+			dumpDeviceInfo(device, CL_DEVICE_BUILT_IN_KERNELS, "Kernels");
+			dumpDeviceInfo<cl_uint>(device, CL_DEVICE_ADDRESS_BITS, "Addr");
+			dumpDeviceInfo<cl_bool>(device, CL_DEVICE_AVAILABLE, "Available");
+			dumpDeviceInfo<cl_bool>(device, CL_DEVICE_ENDIAN_LITTLE, "Endian little");
+			dumpDeviceInfo<cl_bool>(device, CL_DEVICE_ERROR_CORRECTION_SUPPORT, "Error correction support");
+			
+			
 		}
 	}
 

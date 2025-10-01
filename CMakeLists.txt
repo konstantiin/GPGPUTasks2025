@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+set( CMAKE_CXX_COMPILER "D:/programs/msys64/clang64/bin/clang++.exe" )
+set( CMAKE_C_COMPILER "D:/programs/msys64/clang64/bin/clang.exe" )
 project(GPGPUTasks)
 
 set(CMAKE_CXX_STANDARD 17)
